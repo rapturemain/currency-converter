@@ -12,24 +12,50 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.exchange
 import java.math.BigDecimal
-import kotlin.jvm.Throws
 
 @Component
 @Slf4j
 class CurrencyConverterApiService
 @Autowired constructor(private val restTemplate: RestTemplate) {
-    val log = LoggerFactory.getLogger(this.javaClass)
+    private val log = LoggerFactory.getLogger(this.javaClass)
 
-    val exchangeRateCurrencyEncodingTemplate = "%s_%s"
-    val getExchangeRateUrlTemplate = "%s/api/v7/convert?q=%s&compact=ultra&apiKey=%s"
+    private val exchangeRateCurrencyEncodingTemplate = "%s_%s"
+    private val getExchangeRateUrlTemplate = "%s/api/v7/convert?q=%s&compact=ultra&apiKey=%s"
+    private val getAvailableCurrencies = "%s/api/v7/currencies?apiKey=%s"
 
     @Value("\${currencyConverterApi.url}")
-    lateinit var apiUrl: String
+    private lateinit var apiUrl: String
     @Value("\${currencyConverterApi.apiKey}")
-    lateinit var apiKey: String
+    private lateinit var apiKey: String
+
+    private var availableCurrencies: Set<String>? = null
+    private val lock = Any()
+
+    @Suppress("UNCHECKED_CAST")
+    fun isCurrencyAvailable(currencyCode: String): Boolean {
+        if (availableCurrencies == null) {
+            synchronized(lock) {
+                if (availableCurrencies == null) {
+                    val url = String.format(getAvailableCurrencies, apiUrl, apiKey)
+                    val map = makeRequest(url)
+                    val currMap = map["results"] as Map<String, Any>
+                    val available = mutableListOf<String>()
+                    currMap.entries.forEach { entry ->
+                        available.add(entry.key)
+                    }
+                    availableCurrencies = available.toSet()
+                }
+            }
+        }
+        return availableCurrencies!!.contains(currencyCode)
+    }
 
     @Throws(CurrencyConverterApiException::class)
     fun getCurrencyExchangeRate(currencyFrom: Currency, currencyTo: Currency): BigDecimal? {
+        if (!isCurrencyAvailable(currencyFrom.currencyCode) || !isCurrencyAvailable(currencyTo.currencyCode)) {
+            return null
+        }
+
         val currency = String.format(exchangeRateCurrencyEncodingTemplate, currencyFrom.currencyCode, currencyTo.currencyCode)
         val url = String.format(getExchangeRateUrlTemplate, apiUrl, currency, apiKey)
         val map = makeRequest(url)
