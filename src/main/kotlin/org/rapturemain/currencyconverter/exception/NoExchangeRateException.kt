@@ -1,7 +1,7 @@
 package org.rapturemain.currencyconverter.exception
 
+import org.rapturemain.currencyconverter.model.Currency
 import java.lang.Exception
-import java.util.*
 
 class NoExchangeRateException : Exception {
     constructor(currencyFrom: Currency, currencyTo: Currency) :
