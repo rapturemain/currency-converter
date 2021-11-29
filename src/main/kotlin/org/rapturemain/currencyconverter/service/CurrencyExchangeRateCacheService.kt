@@ -1,10 +1,9 @@
 package org.rapturemain.currencyconverter.service
 
 import org.rapturemain.currencyconverter.exception.NoExchangeRateException
+import org.rapturemain.currencyconverter.model.Currency
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
-import java.util.*
-
 @Component
 class CurrencyExchangeRateCacheService {
 
