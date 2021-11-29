@@ -14,7 +14,7 @@ class ExceptionHandler {
     fun handleNoCurrencyExistsException(ex: ParameterInvalidException): ResponseEntity<MessageResponse> {
         return ResponseEntity<MessageResponse>(
                 MessageResponse("Parameter [${ex.parameterName}] is invalid.${
-                    if (ex.description != null) " ${ex.description}" else  ""}."),
+                    if (ex.description != null) " ${ex.description}." else  ""}"),
                 HttpStatus.BAD_REQUEST
         )
     }
@@ -24,6 +24,16 @@ class ExceptionHandler {
     fun handleUnknownException(ex: UnknownException): ResponseEntity<MessageResponse> {
         return ResponseEntity<MessageResponse>(
                 MessageResponse("Internal Server Error."),
+                HttpStatus.INTERNAL_SERVER_ERROR
+        )
+    }
+
+    @ResponseBody
+    @ExceptionHandler(InternalServerError::class)
+    fun handleInternalServerError(ex: UnknownException): ResponseEntity<MessageResponse> {
+        return ResponseEntity<MessageResponse>(
+                MessageResponse("Internal Server Error.${
+                    if (ex.message != null) " ${ex.message}." else  ""}"),
                 HttpStatus.INTERNAL_SERVER_ERROR
         )
     }

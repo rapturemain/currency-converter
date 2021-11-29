@@ -20,7 +20,7 @@ class CurrencyExchangeRateCacheService {
 
     @Throws(NoExchangeRateException::class)
     fun getRate(currencyFrom: Currency, currencyTo: Currency) =
-            rates[currencyFrom.currencyCode]?.get(currencyTo.currencyCode) ?: throw NoExchangeRateException(currencyFrom, currencyTo)
+            rates[currencyFrom.currencyCode]?.get(currencyTo.currencyCode)
 
     fun deleteRatesOf(currency: Currency) {
         rates.remove(currency.currencyCode)
