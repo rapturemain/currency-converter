@@ -27,4 +27,9 @@ class CurrencyExchangeRateProviderService
     fun getRate(currencyFrom: String, currencyTo: String): BigDecimal =
             rateCache.getRate(currencyProvider.getCurrencyByCode(currencyFrom), currencyProvider.getCurrencyByCode(currencyTo))
 
+    @Throws(NoCurrencyExistsException::class)
+    fun deleteRatesOf(currency: String) {
+        rateCache.deleteRatesOf(currencyProvider.getCurrencyByCode(currency))
+    }
+
 }
