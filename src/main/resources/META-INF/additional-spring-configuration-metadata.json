@@ -9,6 +9,11 @@
       "name": "currencyConverterApi.url",
       "type": "java.lang.String",
       "description": "API URL for the Currency Converter API (currencyconverterapi.com)."
+    },
+    {
+      "name": "currencyConverterApi.ttlInMinutes",
+      "type": "java.lang.String",
+      "description": "Currency exchange rate cache TTL (in minutes) (currencyconverterapi.com)."
     }
   ]
 }

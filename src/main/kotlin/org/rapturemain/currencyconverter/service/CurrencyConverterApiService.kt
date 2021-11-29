@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.exchange
 import java.math.BigDecimal
+import java.util.concurrent.TimeUnit
 
 @Component
 @Slf4j
@@ -27,9 +28,13 @@ class CurrencyConverterApiService
     private lateinit var apiUrl: String
     @Value("\${currencyConverterApi.apiKey}")
     private lateinit var apiKey: String
+    @Value("\${currencyConverterApi.ttlInMinutes}")
+    private lateinit var cacheTTL: String
 
     private var availableCurrencies: Set<String>? = null
     private val lock = Any()
+
+    private val cache = mutableMapOf<Pair<String, String>, Pair<Long, BigDecimal>>()
 
     @Suppress("UNCHECKED_CAST")
     fun isCurrencyAvailable(currencyCode: String): Boolean {
@@ -56,20 +61,46 @@ class CurrencyConverterApiService
             return null
         }
 
+        val cached = getFromCache(currencyFrom, currencyTo)
+        if (cached != null) {
+            return cached
+        }
+
         val currency = String.format(exchangeRateCurrencyEncodingTemplate, currencyFrom.currencyCode, currencyTo.currencyCode)
         val url = String.format(getExchangeRateUrlTemplate, apiUrl, currency, apiKey)
         val map = makeRequest(url)
-        return if (map[currency] == null) null else BigDecimal(map[currency])
+
+        val rate = if (map[currency] == null) null else BigDecimal(map[currency].toString())
+
+        if (rate != null) {
+            saveToCache(currencyFrom, currencyTo, rate)
+        }
+
+        return rate
     }
 
     @Throws(CurrencyConverterApiException::class)
-    private fun makeRequest(url: String): Map<String, String> {
-        log.debug("Sending GET request to ${url.replace(Regex("&apiKey=.*$"), "&apiKey=<API KEY>")}")
-        val response = restTemplate.exchange<Map<String, String>>(url, HttpMethod.GET, null, HashMap::class)
+    private fun makeRequest(url: String): Map<String, Any> {
+        log.debug("Sending GET request to ${url.replace(Regex("[&?]apiKey=.*$"), "&apiKey=<API KEY>")}")
+        val response = restTemplate.exchange<Map<String, Any>>(url, HttpMethod.GET, null, HashMap::class)
         if (response.statusCode != HttpStatus.OK) {
             log.error("CurrConv API failed. Status code: [{}], Response: [{}]", response.statusCode, response.body)
             throw CurrencyConverterApiException("Returned status code is: ${response.statusCode}")
         }
         return response.body!!
+    }
+
+    private fun getFromCache(currencyFrom: Currency, currencyTo: Currency): BigDecimal? {
+        val cacheEntry = cache[currencyFrom.currencyCode to currencyTo.currencyCode] ?: return null
+
+        if (System.currentTimeMillis() - cacheEntry.first > TimeUnit.MINUTES.toMillis(cacheTTL.toLong())) {
+            return null
+        }
+
+        return cacheEntry.second
+    }
+
+    private fun saveToCache(currencyFrom: Currency, currencyTo: Currency, rate: BigDecimal) {
+        cache[currencyFrom.currencyCode to currencyTo.currencyCode] = System.currentTimeMillis() to rate
     }
 }
