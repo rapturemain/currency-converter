@@ -6,4 +6,5 @@ import java.lang.Exception
 class NoExchangeRateException : Exception {
     constructor(currencyFrom: Currency, currencyTo: Currency) :
             super("${currencyFrom.currencyCode} to ${currencyTo.currencyCode} rate does not exist")
+    constructor(message: String) : super(message)
 }
