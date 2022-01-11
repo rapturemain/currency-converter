@@ -1,3 +1,5 @@
+![why_do_i_need_this](https://github.com/rapturemain/currency-converter/actions/workflows/unit-tests.yml/badge.svg?branch=main)
+
 # currency-converter
 
 Simple Homework project for university, that teaches how to use git-flow
